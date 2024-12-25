@@ -1,5 +1,7 @@
-import { LayoutDashboard, Menu, Users } from "lucide-react";
+"use client";
 
+import { LayoutDashboard, Menu, Users } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Image from "next/image";
@@ -20,26 +22,32 @@ const CompanyLogo = () => {
   );
 };
 
-const MenuItems = () => {
+const MenuItems = ({ onClick }: { onClick?: () => void }) => {
   const features = getFeatures();
 
   return (
     <>
-      <MainNavItem path="/">
+      <MainNavItem path="/" onClick={onClick}>
         <LayoutDashboard size={18} strokeWidth={1.4} />
         Dashboard
       </MainNavItem>
-      {/* {features.seats && (
-        <MainNavItem path="/seats">
+      {features.seats && (
+        <MainNavItem path="/seats" onClick={onClick}>
           <Users size={18} strokeWidth={1.4} />
           Seats
         </MainNavItem>
-      )} */}
+      )}
     </>
   );
 };
 
 export const AppHeader = () => {
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  const handleMenuItemClick = () => {
+    setIsSheetOpen(false);
+  };
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 justify-between sm:justify-normal">
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6 flex-1">
@@ -47,7 +55,7 @@ export const AppHeader = () => {
         <MenuItems />
       </nav>
 
-      <Sheet>
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="shrink-0 md:hidden">
             <Menu className="h-5 w-5" />
@@ -57,7 +65,7 @@ export const AppHeader = () => {
         <SheetContent side="left">
           <nav className="grid gap-6 text-lg font-medium">
             <CompanyLogo />
-            <MenuItems />
+            <MenuItems onClick={handleMenuItemClick} />
           </nav>
         </SheetContent>
       </Sheet>
