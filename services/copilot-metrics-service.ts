@@ -3,41 +3,12 @@ import {
   unknownResponseError,
 } from "@/features/common/response-error";
 import { ServerActionResponse } from "@/features/common/server-action-response";
-import { SqlQuerySpec } from "@azure/cosmos";
 import { format } from "date-fns";
-import { cosmosClient, cosmosConfiguration } from "./cosmos-db-service";
 import { ensureGitHubEnvConfig } from "./env-service";
 import { applyTimeFrameLabel } from "./helper";
 import { sampleData } from "./sample-data";
-
-export interface CopilotUsage {
-  total_suggestions_count: number;
-  total_acceptances_count: number;
-  total_lines_suggested: number;
-  total_lines_accepted: number;
-  total_active_users: number;
-  total_chat_acceptances: number;
-  total_chat_turns: number;
-  total_active_chat_users: number;
-  day: string;
-  breakdown: Breakdown[];
-}
-
-export interface CopilotUsageOutput extends CopilotUsage {
-  time_frame_week: string;
-  time_frame_month: string;
-  time_frame_display: string;
-}
-
-export interface Breakdown {
-  language: string;
-  editor: string;
-  suggestions_count: number;
-  acceptances_count: number;
-  lines_suggested: number;
-  lines_accepted: number;
-  active_users: number;
-}
+import { mongoClient, mongoConfiguration } from "./mongo-db-service";
+import { CopilotUsage, ICopilotUsage } from "@/types/copilotUsage";
 
 export interface IFilter {
   startDate?: Date;
@@ -46,14 +17,14 @@ export interface IFilter {
 
 export const getCopilotMetrics = async (
   filter: IFilter
-): Promise<ServerActionResponse<CopilotUsageOutput[]>> => {
+): Promise<ServerActionResponse<ICopilotUsage[]>> => {
   try {
-    const isCosmosConfig = cosmosConfiguration();
+    const isMongoConfig = mongoConfiguration();
     switch(process.env.GITHUB_API_SCOPE) {
       // If we have the required environment variables, we can use the enterprise API endpoint
       case "enterprise":
         // If we have the required environment variables, we can use the database
-        if (isCosmosConfig) {
+        if (isMongoConfig) {
           return getCopilotMetricsForEnterpriseFromDatabase(filter);
         }
         return getCopilotMetricsForEnterpriseFromApi();
@@ -62,7 +33,7 @@ export const getCopilotMetrics = async (
       // As default option, we can use the organization API endpoint
       default:
         // If we have the required environment variables, we can use the database
-        if (isCosmosConfig) {
+        if (isMongoConfig) {
           return getCopilotMetricsForOrgsFromDatabase(filter);
         }
         return getCopilotMetricsForOrgsFromApi();
@@ -77,7 +48,7 @@ export const getCopilotMetrics = async (
 };
 
 export const getCopilotMetricsForOrgsFromApi = async (): Promise<
-  ServerActionResponse<CopilotUsageOutput[]>
+  ServerActionResponse<ICopilotUsage[]>
 > => {
   const env = ensureGitHubEnvConfig();
 
@@ -116,7 +87,7 @@ export const getCopilotMetricsForOrgsFromApi = async (): Promise<
 };
 
 export const getCopilotMetricsForEnterpriseFromApi = async (): Promise<
-  ServerActionResponse<CopilotUsageOutput[]>
+  ServerActionResponse<ICopilotUsage[]>
 > => {
   const env = ensureGitHubEnvConfig();
 
@@ -156,61 +127,56 @@ export const getCopilotMetricsForEnterpriseFromApi = async (): Promise<
 
 export const getCopilotMetricsForOrgsFromDatabase = async (
   filter: IFilter
-): Promise<ServerActionResponse<CopilotUsageOutput[]>> => {
-  const client = cosmosClient();
-  const database = client.database("platform-engineering");
-  const container = database.container("history");
-
-  let start = "";
-  let end = "";
-  const maxDays = 365 * 2; // maximum 2 years of data
+): Promise<ServerActionResponse<ICopilotUsage[]>> => {
+  await mongoClient();
+  
   const maximumDays = 31;
+  let start: string;
+  let end: string;
 
   if (filter.startDate && filter.endDate) {
     start = format(filter.startDate, "yyyy-MM-dd");
     end = format(filter.endDate, "yyyy-MM-dd");
   } else {
-    // set the start date to today and the end date to 31 days ago
     const todayDate = new Date();
     const startDate = new Date(todayDate);
     startDate.setDate(todayDate.getDate() - maximumDays);
-
+    
     start = format(startDate, "yyyy-MM-dd");
     end = format(todayDate, "yyyy-MM-dd");
   }
 
-  let querySpec: SqlQuerySpec = {
-    query: `SELECT * FROM c WHERE c.day >= @start AND c.day <= @end`,
-    parameters: [
-      { name: "@start", value: start },
-      { name: "@end", value: end },
-    ],
-  };
+  try {
+    const resources = await CopilotUsage.find({
+      day: {
+        $gte: start,
+        $lte: end
+      }
+    }).lean();
 
-  const { resources } = await container.items
-    .query<CopilotUsageOutput>(querySpec, {
-      maxItemCount: maxDays,
-    })
-    .fetchAll();
-
-  const dataWithTimeFrame = applyTimeFrameLabel(resources);
-  return {
-    status: "OK",
-    response: dataWithTimeFrame,
-  };
+    const dataWithTimeFrame = applyTimeFrameLabel(resources);
+    
+    return {
+      status: "OK",
+      response: dataWithTimeFrame,
+    };
+  } catch (error) {
+    console.error('Error fetching copilot metrics:', error);
+    return {
+      status: "ERROR",
+      errors: [{ message: "Failed to fetch copilot metrics" }],
+    };
+  }
 };
 
 export const getCopilotMetricsForEnterpriseFromDatabase = async (
   filter: IFilter
-): Promise<ServerActionResponse<CopilotUsageOutput[]>> => {
-  const client = cosmosClient();
-  const database = client.database("platform-engineering");
-  const container = database.container("history");
-
-  let start = "";
-  let end = "";
-  const maxDays = 365 * 2; // maximum 2 years of data
+): Promise<ServerActionResponse<ICopilotUsage[]>> => {
+  await mongoClient();
+  
   const maximumDays = 31;
+  let start: string;
+  let end: string;
 
   if (filter.startDate && filter.endDate) {
     start = format(filter.startDate, "yyyy-MM-dd");
@@ -219,34 +185,36 @@ export const getCopilotMetricsForEnterpriseFromDatabase = async (
     const todayDate = new Date();
     const startDate = new Date(todayDate);
     startDate.setDate(todayDate.getDate() - maximumDays);
-
+    
     start = format(startDate, "yyyy-MM-dd");
     end = format(todayDate, "yyyy-MM-dd");
   }
 
-  let querySpec: SqlQuerySpec = {
-    query: `SELECT * FROM c WHERE c.day >= @start AND c.day <= @end`,
-    parameters: [
-      { name: "@start", value: start },
-      { name: "@end", value: end },
-    ],
-  };
+  try {
+    const resources = await CopilotUsage.find({
+      day: {
+        $gte: start,
+        $lte: end
+      }
+    }).lean();
 
-  const { resources } = await container.items
-    .query<CopilotUsageOutput>(querySpec, {
-      maxItemCount: maxDays,
-    })
-    .fetchAll();
-
-  const dataWithTimeFrame = applyTimeFrameLabel(resources);
-  return {
-    status: "OK",
-    response: dataWithTimeFrame,
-  };
+    const dataWithTimeFrame = applyTimeFrameLabel(resources);
+    
+    return {
+      status: "OK",
+      response: dataWithTimeFrame,
+    };
+  } catch (error) {
+    console.error('Error fetching enterprise copilot metrics:', error);
+    return {
+      status: "ERROR",
+      errors: [{ message: "Failed to fetch enterprise copilot metrics" }],
+    };
+  }
 };
 
-export const _getCopilotMetrics = (): Promise<CopilotUsageOutput[]> => {
-  const promise = new Promise<CopilotUsageOutput[]>((resolve) => {
+export const _getCopilotMetrics = (): Promise<ICopilotUsage[]> => {
+  const promise = new Promise<ICopilotUsage[]>((resolve) => {
     setTimeout(() => {
       const weekly = applyTimeFrameLabel(sampleData);
       resolve(weekly);
