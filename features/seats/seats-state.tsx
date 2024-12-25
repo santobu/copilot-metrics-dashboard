@@ -1,12 +1,11 @@
 "use client";
 
 import { PropsWithChildren } from "react";
-import { CopilotSeatsData } from "@/features/common/models";
+import { ICopilotSeatsData } from "@/types/CopilotSeats";
 import { proxy, useSnapshot } from "valtio";
 
-
 interface IProps extends PropsWithChildren {
-  copilotSeats: CopilotSeatsData;
+  copilotSeats: ICopilotSeatsData;
 }
 
 export interface DropdownFilterItem {
@@ -15,17 +14,14 @@ export interface DropdownFilterItem {
 }
 
 class DashboardState {
-  public filteredData: CopilotSeatsData = {} as CopilotSeatsData;
+  public filteredData: ICopilotSeatsData = {} as ICopilotSeatsData;
 
-  private apiData: CopilotSeatsData = {} as CopilotSeatsData;
+  private apiData: ICopilotSeatsData = {} as ICopilotSeatsData;
 
-  public initData(
-    data: CopilotSeatsData
-  ): void {
+  public initData(data: ICopilotSeatsData): void {
     this.apiData = data;
     this.filteredData = data;
   }
-
 }
 
 export const dashboardStore = proxy(new DashboardState());
@@ -34,10 +30,7 @@ export const useDashboard = () => {
   return useSnapshot(dashboardStore, { sync: true }) as DashboardState;
 };
 
-export const DataProvider = ({
-  children,
-  copilotSeats
-}: IProps) => {
+export const DataProvider = ({ children, copilotSeats }: IProps) => {
   dashboardStore.initData(copilotSeats);
   return <>{children}</>;
 };

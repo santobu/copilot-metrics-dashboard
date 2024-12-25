@@ -1,17 +1,17 @@
-import {
-  formatResponseError,
-  unknownResponseError,
+import { format } from "date-fns";
+import { 
+  formatResponseError, 
+  unknownResponseError 
 } from "@/features/common/response-error";
 import { ServerActionResponse } from "@/features/common/server-action-response";
 import { ensureGitHubEnvConfig } from "./env-service";
-import {
-  CopilotSeatsData,
-  CopilotSeatManagementData,
-} from "@/features/common/models";
-import { cosmosClient } from "./cosmos-db-service";
-import { format } from "date-fns";
-import { SqlQuerySpec } from "@azure/cosmos";
 import { stringIsNullOrEmpty } from "../utils/helpers";
+import { 
+  CopilotSeats,
+  ICopilotSeatsData,
+  ICopilotSeatManagementData 
+} from "@/types/CopilotSeats";
+import { mongoClient } from "./mongo-db-service";
 
 export interface IFilter {
   date?: Date;
@@ -22,14 +22,14 @@ export interface IFilter {
 
 export const getCopilotSeats = async (
   filter: IFilter
-): Promise<ServerActionResponse<CopilotSeatsData>> => {
+): Promise<ServerActionResponse<ICopilotSeatsData>> => {
   const env = ensureGitHubEnvConfig();
 
   if (env.status !== "OK") {
     return env;
   }
 
-  const { enterprise, organization, token, version } = env.response;
+  const { enterprise, organization } = env.response;
 
   try {
     switch (process.env.GITHUB_API_SCOPE) {
@@ -52,66 +52,45 @@ export const getCopilotSeats = async (
 
 const getCopilotSeatsFromDatabase = async (
   filter: IFilter
-): Promise<ServerActionResponse<CopilotSeatsData>> => {
-  const client = cosmosClient();
-  const database = client.database("platform-engineering");
-  const container = database.container("seats_history");
+): Promise<ServerActionResponse<ICopilotSeatsData>> => {
+  await mongoClient();
 
-  let date = "";
-  const maxDays = 365 * 2; // maximum 2 years of data
+  let date = filter.date ? format(filter.date, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
 
-  if (filter.date) {
-    date = format(filter.date, "yyyy-MM-dd");
-  } else {
-    const today = new Date();
-    date = format(today, "yyyy-MM-dd");
+  try {
+    const query: any = { date };
+    
+    if (filter.enterprise) {
+      query.enterprise = filter.enterprise;
+    }
+    if (filter.organization) {
+      query.organization = filter.organization;
+    }
+    if (filter.team) {
+      query.team = filter.team;
+    }
+
+    const result = await CopilotSeats.findOne(query).lean();
+
+    return {
+      status: "OK",
+      response: result,
+    };
+  } catch (error) {
+    return unknownResponseError(error);
   }
-
-  let querySpec: SqlQuerySpec = {
-    query: `SELECT * FROM c WHERE c.date = @date`,
-    parameters: [{ name: "@date", value: date }],
-  };
-  if (filter.enterprise) {
-    querySpec.query += ` AND c.enterprise = @enterprise`;
-    querySpec.parameters?.push({
-      name: "@enterprise",
-      value: filter.enterprise,
-    });
-  }
-  if (filter.organization) {
-    querySpec.query += ` AND c.organization = @organization`;
-    querySpec.parameters?.push({
-      name: "@organization",
-      value: filter.organization,
-    });
-  }
-  if (filter.team) {
-    querySpec.query += ` AND c.team = @team`;
-    querySpec.parameters?.push({ name: "@team", value: filter.team });
-  }
-
-  const { resources } = await container.items
-    .query<CopilotSeatsData>(querySpec, {
-      maxItemCount: maxDays,
-    })
-    .fetchAll();
-
-  return {
-    status: "OK",
-    response: resources[0],
-  };
 };
 
 export const getCopilotSeatsManagement = async (
   filter: IFilter
-): Promise<ServerActionResponse<CopilotSeatManagementData>> => {
+): Promise<ServerActionResponse<ICopilotSeatManagementData>> => {
   const env = ensureGitHubEnvConfig();
 
   if (env.status !== "OK") {
     return env;
   }
 
-  const { enterprise, organization, token, version } = env.response;
+  const { enterprise, organization } = env.response;
 
   try {
     switch (process.env.GITHUB_API_SCOPE) {
@@ -134,7 +113,7 @@ export const getCopilotSeatsManagement = async (
 
 const getCopilotSeatsManagementFromAPI = async (
   filter: IFilter
-): Promise<ServerActionResponse<CopilotSeatManagementData>> => {
+): Promise<ServerActionResponse<ICopilotSeatManagementData>> => {
   const env = ensureGitHubEnvConfig();
 
   if (env.status !== "OK") {
@@ -145,20 +124,20 @@ const getCopilotSeatsManagementFromAPI = async (
 
   try {
     switch (process.env.GITHUB_API_SCOPE) {
-      case "enterprise":
+      case "enterprise": {
         if (stringIsNullOrEmpty(filter.enterprise)) {
           filter.enterprise = enterprise;
         }
         const today = new Date();
-        const enterpriseSeats: CopilotSeatsData = {
+        const enterpriseSeats: ICopilotSeatsData = {
           enterprise: filter.enterprise,
           seats: [],
           total_seats: 0,
           last_update: format(today, "yyyy-MM-ddTHH:mm:ss"),
           date: format(today, "yyyy-MM-dd"),
-          id: `${today}-ENT-${filter.enterprise}`,
+          id: `${format(today, "yyyy-MM-dd")}-ENT-${filter.enterprise}`,
           organization: null,
-        };
+        } as unknown as ICopilotSeatsData;
 
         let url = `https://api.github.com/enterprises/${filter.enterprise}/copilot/billing/seats`;
         do {
@@ -183,14 +162,15 @@ const getCopilotSeatsManagementFromAPI = async (
           url = getNextUrlFromLinkHeader(linkHeader) || "";
         } while (!stringIsNullOrEmpty(url));
 
-        // Copilot seats are considered active if they have been active in the last 30 days
+
         const activeSeats = enterpriseSeats.seats.filter((seat) => {
           const lastActivityDate = new Date(seat.last_activity_at);
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
           return lastActivityDate >= thirtyDaysAgo;
         });
-        const seatManagementData: CopilotSeatManagementData = {
+
+        const seatManagementData: ICopilotSeatManagementData = {
           enterprise: enterpriseSeats.enterprise,
           organization: enterpriseSeats.organization,
           date: enterpriseSeats.date,
@@ -201,8 +181,7 @@ const getCopilotSeatsManagementFromAPI = async (
             seat_breakdown: {
               total: enterpriseSeats.seats.length,
               active_this_cycle: activeSeats.length,
-              inactive_this_cycle:
-                enterpriseSeats.seats.length - activeSeats.length,
+              inactive_this_cycle: enterpriseSeats.seats.length - activeSeats.length,
               added_this_cycle: 0,
               pending_invitation: 0,
               pending_cancellation: 0,
@@ -214,15 +193,15 @@ const getCopilotSeatsManagementFromAPI = async (
             cli: "",
             plan_type: "",
           },
-        };
+        } as ICopilotSeatManagementData;
 
         return {
           status: "OK",
-          response: seatManagementData as CopilotSeatManagementData,
+          response: seatManagementData,
         };
-        break;
+      }
 
-      default:
+      default: {
         if (stringIsNullOrEmpty(filter.organization)) {
           filter.organization = organization;
         }
@@ -243,21 +222,22 @@ const getCopilotSeatsManagementFromAPI = async (
         }
 
         const seats = await response.json();
-        const _today = new Date();
-        const data: CopilotSeatManagementData = {
-          id: `${format(_today, "yyyy-MM-dd")}-ORG-${filter.organization}`,
-          date: format(_today, "yyyy-MM-dd"),
-          last_update: format(_today, "yyyy-MM-ddTHH:mm:ss"),
+        const today = new Date();
+        const data: ICopilotSeatManagementData = {
+          id: `${format(today, "yyyy-MM-dd")}-ORG-${filter.organization}`,
+          date: format(today, "yyyy-MM-dd"),
+          last_update: format(today, "yyyy-MM-ddTHH:mm:ss"),
           total_seats: seats.total_seats,
-          seats: seats as CopilotSeatManagementData["seats"],
+          seats: seats,
           enterprise: filter.enterprise,
           organization: filter.organization,
-        };
+        } as ICopilotSeatManagementData;
+
         return {
           status: "OK",
-          response: data as CopilotSeatManagementData,
+          response: data,
         };
-        break;
+      }
     }
   } catch (e) {
     return unknownResponseError(e);
@@ -266,7 +246,7 @@ const getCopilotSeatsManagementFromAPI = async (
 
 const getNextUrlFromLinkHeader = (linkHeader: string | null): string | null => {
   if (!linkHeader) return null;
-
+  
   const links = linkHeader.split(',');
   for (const link of links) {
     const match = link.match(/<([^>]+)>;\s*rel="([^"]+)"/);
@@ -275,4 +255,4 @@ const getNextUrlFromLinkHeader = (linkHeader: string | null): string | null => {
     }
   }
   return null;
-}
+};

@@ -8,7 +8,7 @@ import { ensureGitHubEnvConfig } from "./env-service";
 import { applyTimeFrameLabel } from "./helper";
 import { sampleData } from "./sample-data";
 import { mongoClient, mongoConfiguration } from "./mongo-db-service";
-import { CopilotUsage, ICopilotUsage } from "@/types/copilotUsage";
+import { CopilotUsage, ICopilotUsage } from "@/types/CopilotUsage";
 
 export interface IFilter {
   startDate?: Date;

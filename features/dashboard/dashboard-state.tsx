@@ -1,13 +1,16 @@
 "use client";
 
 import { PropsWithChildren } from "react";
-import { Breakdown, CopilotUsageOutput } from "@/services/copilot-metrics-service";
+import {
+  Breakdown,
+  CopilotUsageOutput,
+} from "@/services/copilot-metrics-service";
 import { formatDate } from "@/utils/helpers";
 
 import { proxy, useSnapshot } from "valtio";
 
 import { groupByTimeFrame } from "@/utils/data-mapper";
-import { SeatManagement } from "../common/models";
+import { SeatManagement } from "../../types/models";
 
 interface IProps extends PropsWithChildren {
   copilotUsages: CopilotUsageOutput[];

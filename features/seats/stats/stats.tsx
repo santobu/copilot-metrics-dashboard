@@ -1,7 +1,7 @@
 "use client";
-import { Card, CardContent } from "@/components/ui/card";
+
 import { useDashboard } from "@/features/seats/seats-state";
-import { CopilotSeatsData } from "@/features/common/models";
+import { ICopilotSeatsData } from "@/types/CopilotSeats";
 import StatsCard from "./stats-card";
 
 interface TotalSeatsData {
@@ -10,7 +10,7 @@ interface TotalSeatsData {
   total_inactive_seats: number;
 }
 
-function totalSeats(filteredData: CopilotSeatsData): TotalSeatsData {
+function totalSeats(filteredData: ICopilotSeatsData): TotalSeatsData {
   let total_active_seats = 0;
   let total_inactive_seats = 0;
   filteredData?.seats.map((item) => {
@@ -19,7 +19,11 @@ function totalSeats(filteredData: CopilotSeatsData): TotalSeatsData {
     const diffTime = Math.abs(currentDate.getTime() - lastActivityAt.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (item.pending_cancellation_date && new Date(item.pending_cancellation_date) < currentDate || diffDays > 31) {
+    if (
+      (item.pending_cancellation_date &&
+        new Date(item.pending_cancellation_date) < currentDate) ||
+      diffDays > 31
+    ) {
       total_inactive_seats += 1;
     } else {
       total_active_seats += 1;
@@ -29,7 +33,7 @@ function totalSeats(filteredData: CopilotSeatsData): TotalSeatsData {
   return {
     total_seats: total_active_seats + total_inactive_seats,
     total_active_seats: total_active_seats,
-    total_inactive_seats: total_inactive_seats
+    total_inactive_seats: total_inactive_seats,
   };
 }
 
@@ -54,9 +58,6 @@ export const Stats = () => {
         description="Total inactive users"
         value={totalSeatsData.total_inactive_seats.toString()}
       ></StatsCard>
-
     </div>
   );
 };
-
-
