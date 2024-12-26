@@ -1,10 +1,7 @@
 "use client";
 
 import { PropsWithChildren } from "react";
-import {
-  ICopilotSeatManagementData,
-  ICopilotSeatsData,
-} from "@/types/CopilotSeats";
+import { ICopilotSeatsData } from "@/types/CopilotSeats";
 import { proxy, useSnapshot } from "valtio";
 
 interface IProps extends PropsWithChildren {

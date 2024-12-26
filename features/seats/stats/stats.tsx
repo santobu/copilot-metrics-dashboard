@@ -1,7 +1,6 @@
 "use client";
 
 import { useDashboard } from "@/features/seats/seats-state";
-import { ICopilotSeatsData } from "@/types/CopilotSeats";
 import StatsCard from "./stats-card";
 
 interface TotalSeatsData {
@@ -10,10 +9,11 @@ interface TotalSeatsData {
   total_inactive_seats: number;
 }
 
-function totalSeats(filteredData: ICopilotSeatsData): TotalSeatsData {
+function totalSeats(filteredData: any): TotalSeatsData {
   let total_active_seats = 0;
   let total_inactive_seats = 0;
-  filteredData?.seats.map((item) => {
+
+  filteredData?.seats?.allSeats?.map((item: any) => {
     const lastActivityAt = new Date(item.last_activity_at);
     const currentDate = new Date();
     const diffTime = Math.abs(currentDate.getTime() - lastActivityAt.getTime());
@@ -42,7 +42,7 @@ export const Stats = () => {
   const totalSeatsData = totalSeats(filteredData);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 col-span-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 col-span-4">
       <StatsCard
         title="Total users"
         description="Total assigned seats"
