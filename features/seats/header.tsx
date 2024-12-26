@@ -10,10 +10,9 @@ export const Header = ({ title }: HeaderProps) => {
     <PageHeader>
       <PageTitle>{title}</PageTitle>
       <div className="flex gap-8 justify-between flex-col md:flex-row">
-
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           <DateFilter />
-        </div>
+        </div> */}
       </div>
     </PageHeader>
   );

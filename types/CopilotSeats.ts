@@ -40,6 +40,7 @@ export interface SeatsManagement {
   platform_chat: string;
   cli: string;
   plan_type: string;
+  allSeats?: Seat[];
 }
 
 export interface ICopilotSeatManagementData extends Document {

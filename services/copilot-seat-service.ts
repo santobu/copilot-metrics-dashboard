@@ -194,6 +194,7 @@ const getCopilotSeatsManagementFromAPI = async (
               pending_invitation: 0,
               pending_cancellation: 0,
             },
+            allSeats: enterpriseSeats.seats,
             seat_management_setting: "",
             public_code_suggestions: "",
             ide_chat: "",

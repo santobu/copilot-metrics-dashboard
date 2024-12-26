@@ -1,4 +1,5 @@
 "use client";
+
 import { useDashboard } from "./seats-state";
 import { ChartHeader } from "@/features/common/chart-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,10 +12,11 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { stringIsNullOrEmpty } from "@/utils/helpers";
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 
 function formatEditorName(editor: string | undefined): string {
   if (stringIsNullOrEmpty(editor)) {
-    return editor || "N/A";
+    return editor || "-";
   }
   const editorInfo = editor.split("/");
   const editorName = `${editorInfo[0]} (${editorInfo[1]})`;
@@ -25,6 +27,7 @@ function formatEditorName(editor: string | undefined): string {
 export const SeatsList = () => {
   const { filteredData } = useDashboard();
   const currentData = filteredData;
+
   return (
     <Card className="col-span-4">
       <ChartHeader title="Assigned Seats" description="" />
@@ -32,39 +35,58 @@ export const SeatsList = () => {
         <Table className="min-w-full">
           <TableHeader>
             <TableRow>
+              <TableHead>Order</TableHead>
+              <TableHead>Avatar</TableHead>
               <TableHead>User</TableHead>
               <TableHead>Create Date</TableHead>
-              <TableHead>Update Date</TableHead>
+              {/* <TableHead>Update Date</TableHead> */}
               <TableHead>Last Activity Date</TableHead>
               <TableHead>Last Activity Editor</TableHead>
               {/* <TableHead>Plan</TableHead> */}
-              <TableHead>Pending Cancellation</TableHead>
+              {/* <TableHead>Pending Cancellation</TableHead> */}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentData?.seats?.map((data, index) => {
+            {currentData?.seats.allSeats?.map((data: any, index: number) => {
               const createdAt = new Date(data.created_at);
               const updatedAt = new Date(data.updated_at);
-              const lastActivityAt = new Date(data.last_activity_at);
+              const lastActivityAt = data.last_activity_at
+                ? new Date(data.last_activity_at)
+                : "";
               const pendingCancellationDate = data.pending_cancellation_date
                 ? new Date(data.pending_cancellation_date)
                 : null;
 
               return (
                 <TableRow key={index}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>
+                    <Avatar>
+                      <AvatarImage
+                        className="h-10 w-10"
+                        src={data.assignee.avatar_url}
+                        alt={data.assignee.login}
+                      />
+                      <AvatarFallback>
+                        {data.assignee.login.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TableCell>
                   <TableCell>{data.assignee.login}</TableCell>
                   <TableCell>{createdAt.toLocaleDateString()}</TableCell>
-                  <TableCell>{updatedAt.toLocaleDateString()}</TableCell>
-                  <TableCell>{lastActivityAt.toLocaleDateString()}</TableCell>
+                  {/* <TableCell>{updatedAt.toLocaleDateString()}</TableCell> */}
+                  <TableCell>
+                    {lastActivityAt ? lastActivityAt.toLocaleString() : "-"}
+                  </TableCell>
                   <TableCell>
                     {formatEditorName(data.last_activity_editor)}
                   </TableCell>
                   {/* <TableCell>{data.plan_type}</TableCell> */}
-                  <TableCell>
+                  {/* <TableCell>
                     {pendingCancellationDate
                       ? pendingCancellationDate.toLocaleDateString()
                       : "N/A"}
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               );
             })}
