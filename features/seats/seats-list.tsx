@@ -49,13 +49,13 @@ export const SeatsList = () => {
           <TableBody>
             {currentData?.seats.allSeats?.map((data: any, index: number) => {
               const createdAt = new Date(data.created_at);
-              const updatedAt = new Date(data.updated_at);
+              // const updatedAt = new Date(data.updated_at);
               const lastActivityAt = data.last_activity_at
                 ? new Date(data.last_activity_at)
                 : "";
-              const pendingCancellationDate = data.pending_cancellation_date
-                ? new Date(data.pending_cancellation_date)
-                : null;
+              // const pendingCancellationDate = data.pending_cancellation_date
+              //   ? new Date(data.pending_cancellation_date)
+              //   : null;
 
               return (
                 <TableRow key={index}>
@@ -73,10 +73,24 @@ export const SeatsList = () => {
                     </Avatar>
                   </TableCell>
                   <TableCell>{data.assignee.login}</TableCell>
-                  <TableCell>{createdAt.toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    {createdAt.toLocaleDateString("th-TH", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </TableCell>
                   {/* <TableCell>{updatedAt.toLocaleDateString()}</TableCell> */}
                   <TableCell>
-                    {lastActivityAt ? lastActivityAt.toLocaleString() : "-"}
+                    {lastActivityAt
+                      ? lastActivityAt.toLocaleDateString("th-TH", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "numeric",
+                          minute: "numeric",
+                        })
+                      : "-"}
                   </TableCell>
                   <TableCell>
                     {formatEditorName(data.last_activity_editor)}
