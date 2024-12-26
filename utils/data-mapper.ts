@@ -1,12 +1,12 @@
-import { CopilotUsageOutput } from "../services/copilot-metrics-service";
+import { ICopilotUsageInput } from "@/types/CopilotUsage";
 
 export const groupByTimeFrame = (
-  groupedByTimeFrame: Record<string, CopilotUsageOutput[]>
+  groupedByTimeFrame: Record<string, ICopilotUsageInput[]>
 ) => {
-  const updatedResponse: CopilotUsageOutput[] = [];
+  const updatedResponse: ICopilotUsageInput[] = [];
 
   Object.keys(groupedByTimeFrame).forEach((week) => {
-    const aggregatedData: CopilotUsageOutput = {
+    const aggregatedData: ICopilotUsageInput = {
       total_suggestions_count: 0,
       total_acceptances_count: 0,
       total_lines_suggested: 0,

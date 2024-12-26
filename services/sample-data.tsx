@@ -1,6 +1,6 @@
-import { CopilotUsage } from "./copilot-metrics-service";
+import { ICopilotUsageInput } from "@/types/CopilotUsage";
 
-export const sampleData: CopilotUsage[] = [
+export const sampleData: ICopilotUsageInput[] = [
   {
     total_suggestions_count: 50,
     total_acceptances_count: 40,

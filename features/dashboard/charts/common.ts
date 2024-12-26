@@ -1,5 +1,4 @@
-import { Breakdown } from "@/services/copilot-metrics-service";
-import { CopilotUsageOutput } from "@/services/copilot-metrics-service";
+import { IBreakdown, ICopilotUsage } from "@/types/CopilotUsage";
 import { PieChartData } from "./language";
 
 export interface AcceptanceRateData {
@@ -8,13 +7,13 @@ export interface AcceptanceRateData {
 }
 
 export const computeAcceptanceAverage = (
-  filteredData: CopilotUsageOutput[]
+  filteredData: ICopilotUsage[]
 ): AcceptanceRateData[] => {
   const rates = filteredData.map((item) => {
     let cumulatedLinesAccepted = 0;
     let cumulatedLinesSuggested = 0;
 
-    item.breakdown.forEach((breakdown: Breakdown) => {
+    item.breakdown.forEach((breakdown: IBreakdown) => {
       const { lines_accepted, lines_suggested } = breakdown;
       cumulatedLinesAccepted += lines_accepted;
       cumulatedLinesSuggested += lines_suggested;
@@ -27,7 +26,7 @@ export const computeAcceptanceAverage = (
 
     return {
       acceptanceRate: parseFloat(acceptanceAverage.toFixed(2)),
-      timeFrameDisplay: item.time_frame_display,
+      timeFrameDisplay: item.time_frame_display || "",
     };
   });
 
@@ -41,13 +40,13 @@ export interface ActiveUserData {
 }
 
 export function getActiveUsers(
-  filteredData: CopilotUsageOutput[]
+  filteredData: ICopilotUsage[]
 ): ActiveUserData[] {
   const rates = filteredData.map((item) => {
     return {
       totalUsers: item.total_active_users,
       totalChatUsers: item.total_active_chat_users,
-      timeFrameDisplay: item.time_frame_display,
+      timeFrameDisplay: item.time_frame_display || "",
     };
   });
 
@@ -55,7 +54,7 @@ export function getActiveUsers(
 }
 
 export const computeEditorData = (
-  filteredData: CopilotUsageOutput[]
+  filteredData: ICopilotUsage[]
 ): Array<PieChartData> => {
   const editorMap = new Map<string, PieChartData>();
 
@@ -97,7 +96,7 @@ export const computeEditorData = (
 };
 
 export const computeLanguageData = (
-  filteredData: CopilotUsageOutput[]
+  filteredData: ICopilotUsage[]
 ): Array<PieChartData> => {
   const languageMap = new Map<string, PieChartData>();
 
@@ -139,7 +138,7 @@ export const computeLanguageData = (
 };
 
 export const computeActiveUserAverage = (
-  filteredData: CopilotUsageOutput[]
+  filteredData: ICopilotUsage[]
 ) => {
   const activeUsersSum: number = filteredData.reduce(
     (sum: number, item: { total_active_users: number }) =>
@@ -160,7 +159,7 @@ export const computeAdoptionRate = (seatManagement: any) => {
 };
 
 export const computeCumulativeAcceptanceAverage = (
-  filteredData: CopilotUsageOutput[]
+  filteredData: ICopilotUsage[]
 ) => {
   const acceptanceAverages = computeAcceptanceAverage(filteredData);
 
@@ -179,7 +178,7 @@ export interface LineSuggestionsAndAcceptancesData {
 }
 
 export function totalLinesSuggestedAndAccepted(
-  filteredData: CopilotUsageOutput[]
+  filteredData: ICopilotUsage[]
 ): LineSuggestionsAndAcceptancesData[] {
   const codeLineSuggestionsAndAcceptances = filteredData.map((item) => {
     let total_lines_accepted = 0;
@@ -193,7 +192,7 @@ export function totalLinesSuggestedAndAccepted(
     return {
       totalLinesAccepted: total_lines_accepted,
       totalLinesSuggested: total_lines_suggested,
-      timeFrameDisplay: item.time_frame_display,
+      timeFrameDisplay: item.time_frame_display || "",
     };
   });
 
@@ -207,7 +206,7 @@ export interface SuggestionAcceptanceData {
 }
 
 export function totalSuggestionsAndAcceptances(
-  filteredData: CopilotUsageOutput[]
+  filteredData: ICopilotUsage[]
 ): SuggestionAcceptanceData[] {
   const rates = filteredData.map((item) => {
     let totalAcceptancesCount = 0;
@@ -221,7 +220,7 @@ export function totalSuggestionsAndAcceptances(
     return {
       totalAcceptancesCount,
       totalSuggestionsCount,
-      timeFrameDisplay: item.time_frame_display,
+      timeFrameDisplay: item.time_frame_display || "",
     };
   });
 

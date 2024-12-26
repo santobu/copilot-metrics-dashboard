@@ -1,13 +1,16 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 interface Seat {
-  pending_cancellation_date: boolean;
+  plan_type: any;
+  pending_cancellation_date: Date | null;
   user_id: number;
   user_login: string;
   assignment_date: string;
   last_activity_at: string;
   last_activity_editor?: string;
   created_at: string;
+  updated_at: string;
+  assignee: any;
 }
 
 export interface ICopilotSeatsData extends Document {
@@ -29,7 +32,7 @@ interface SeatBreakdown {
   pending_cancellation: number;
 }
 
-interface SeatsManagement {
+export interface SeatsManagement {
   seat_breakdown: SeatBreakdown;
   seat_management_setting: string;
   public_code_suggestions: string;

@@ -1,15 +1,16 @@
 import { format, startOfWeek } from "date-fns";
-import { CopilotUsage, CopilotUsageOutput } from "./copilot-metrics-service";
+import { ICopilotUsage } from "@/types/CopilotUsage";
+
 
 export const applyTimeFrameLabel = (
-  data: CopilotUsage[]
-): CopilotUsageOutput[] => {
+  data: any[]
+): ICopilotUsage[] => {
   // Sort data by 'day'
   const sortedData = data.sort(
     (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
   );
 
-  const dataWithTimeFrame: CopilotUsageOutput[] = [];
+  const dataWithTimeFrame: ICopilotUsage[] = [];
 
   sortedData.forEach((item) => {
     // Convert 'day' to a Date object and find the start of its week
@@ -20,7 +21,7 @@ export const applyTimeFrameLabel = (
     const weekIdentifier = format(weekStart, "MMM dd");
     const monthIdentifier = format(date, "MMM yy");
 
-    const output: CopilotUsageOutput = {
+    const output: ICopilotUsage = {
       ...item,
       time_frame_week: weekIdentifier,
       time_frame_month: monthIdentifier,

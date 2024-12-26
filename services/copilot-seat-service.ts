@@ -52,7 +52,7 @@ export const getCopilotSeats = async (
 
 const getCopilotSeatsFromDatabase = async (
   filter: IFilter
-): Promise<ServerActionResponse<ICopilotSeatsData>> => {
+): Promise<ServerActionResponse<ICopilotSeatsData >> => {
   await mongoClient();
 
   let date = filter.date ? format(filter.date, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
@@ -74,7 +74,15 @@ const getCopilotSeatsFromDatabase = async (
 
     return {
       status: "OK",
-      response: result,
+      response: (result as unknown as ICopilotSeatsData) || {
+        id: '',
+        date: date,
+        last_update: '',
+        enterprise: '',
+        organization: '',
+        seats: [],
+        total_seats: 0
+      } as unknown as ICopilotSeatsData,
     };
   } catch (error) {
     return unknownResponseError(error);

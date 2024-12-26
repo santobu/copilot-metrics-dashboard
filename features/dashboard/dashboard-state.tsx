@@ -1,20 +1,17 @@
 "use client";
 
 import { PropsWithChildren } from "react";
-import {
-  Breakdown,
-  CopilotUsageOutput,
-} from "@/services/copilot-metrics-service";
+import { IBreakdown, ICopilotUsage } from "@/types/CopilotUsage";
 import { formatDate } from "@/utils/helpers";
 
 import { proxy, useSnapshot } from "valtio";
 
 import { groupByTimeFrame } from "@/utils/data-mapper";
-import { SeatManagement } from "../../types/models";
+import { SeatsManagement } from "@/types/CopilotSeats";
 
 interface IProps extends PropsWithChildren {
-  copilotUsages: CopilotUsageOutput[];
-  seatManagement: SeatManagement;
+  copilotUsages: ICopilotUsage[];
+  seatManagement: SeatsManagement;
 }
 
 export interface DropdownFilterItem {
@@ -25,19 +22,16 @@ export interface DropdownFilterItem {
 export type TimeFrame = "daily" | "weekly" | "monthly";
 
 class DashboardState {
-  public filteredData: CopilotUsageOutput[] = [];
+  public filteredData: ICopilotUsage[] = [];
   public languages: DropdownFilterItem[] = [];
   public editors: DropdownFilterItem[] = [];
   public timeFrame: TimeFrame = "daily";
 
-  public seatManagement: SeatManagement = {} as SeatManagement;
+  public seatManagement: SeatsManagement = {} as SeatsManagement;
 
-  private apiData: CopilotUsageOutput[] = [];
+  private apiData: ICopilotUsage[] = [];
 
-  public initData(
-    data: CopilotUsageOutput[],
-    seatManagement: SeatManagement
-  ): void {
+  public initData(data: any[], seatManagement: SeatsManagement): void {
     this.apiData = [...data];
     this.filteredData = [...data];
     this.onTimeFrameChange(this.timeFrame);
@@ -81,7 +75,7 @@ class DashboardState {
 
     if (selectedLanguages.length !== 0) {
       data.forEach((item) => {
-        const filtered = item.breakdown.filter((breakdown: Breakdown) =>
+        const filtered = item.breakdown.filter((breakdown: IBreakdown) =>
           selectedLanguages.some(
             (selectedLanguage) => selectedLanguage.value === breakdown.language
           )
@@ -92,7 +86,7 @@ class DashboardState {
 
     if (selectedEditors.length !== 0) {
       data.forEach((item) => {
-        const filtered = item.breakdown.filter((breakdown: Breakdown) =>
+        const filtered = item.breakdown.filter((breakdown: IBreakdown) =>
           selectedEditors.some((editor) => editor.value === breakdown.editor)
         );
         item.breakdown = filtered;
@@ -100,7 +94,7 @@ class DashboardState {
     }
 
     const filtered = data.filter((item) => item.breakdown.length > 0);
-    this.filteredData = filtered;
+    this.filteredData = filtered as any;
   }
 
   private extractUniqueLanguages(): DropdownFilterItem[] {
@@ -141,7 +135,7 @@ class DashboardState {
   private aggregatedDataByTimeFrame() {
     const items = JSON.parse(
       JSON.stringify(this.apiData)
-    ) as Array<CopilotUsageOutput>;
+    ) as Array<ICopilotUsage>;
 
     if (this.timeFrame === "daily") {
       items.forEach((item) => {
@@ -156,14 +150,15 @@ class DashboardState {
           ? item.time_frame_week
           : item.time_frame_month;
 
-      if (!acc[timeFrameLabel]) {
-        acc[timeFrameLabel] = [];
+      if (timeFrameLabel) {
+        if (!acc[timeFrameLabel]) {
+          acc[timeFrameLabel] = [];
+        }
+        acc[timeFrameLabel].push(item);
       }
 
-      acc[timeFrameLabel].push(item);
-
       return acc;
-    }, {} as Record<string, CopilotUsageOutput[]>);
+    }, {} as Record<string, ICopilotUsage[]>);
 
     return groupByTimeFrame(groupedByTimeFrame);
   }
