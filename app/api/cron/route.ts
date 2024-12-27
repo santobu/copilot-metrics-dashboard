@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
+// New configuration syntax
+export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
-// This defines who can access this API
-export const config = {
-  matcher: '/api/cron',
-};
-
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET_KEY}`) {
