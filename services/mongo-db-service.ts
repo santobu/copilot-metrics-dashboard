@@ -18,6 +18,7 @@ export const mongoClient = async () => {
     await mongoose.connect(uri, {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
+      dbName: process.env.MONGODB_DB_NAME,
     });
     
     isConnected = true;
@@ -34,6 +35,6 @@ mongoose.connection.on('error', (err) => {
 });
 
 export const mongoConfiguration = (): boolean => {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGOSDB_ENDPOINT;
   return !stringIsNullOrEmpty(uri);
 };

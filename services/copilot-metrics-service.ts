@@ -86,6 +86,44 @@ export const getCopilotMetricsForOrgsFromApi = async (): Promise<
   }
 };
 
+export const getRawCopilotMetricsForEnterpriseFromApi = async (): Promise<
+  ServerActionResponse<any>
+> => {
+  const env = ensureGitHubEnvConfig();
+
+  if (env.status !== "OK") {
+    return env;
+  }
+
+  const { enterprise, token, version } = env.response;
+
+  try {
+    const response = await fetch(
+      `https://api.github.com/enterprises/${enterprise}/copilot/usage`,
+      {
+        cache: "no-store",
+        headers: {
+          Accept: `application/vnd.github+json`,
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": version,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return formatResponseError(enterprise, response);
+    }
+
+    const data = await response.json();
+    return {
+      status: "OK",
+      response: data,
+    };
+  } catch (e) {
+    return unknownResponseError(e);
+  }
+};
+
 export const getCopilotMetricsForEnterpriseFromApi = async (): Promise<
   ServerActionResponse<ICopilotUsage[]>
 > => {

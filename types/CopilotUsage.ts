@@ -61,7 +61,7 @@ const copilotUsageSchema = new Schema<ICopilotUsage>({
   total_chat_acceptances: { type: Number, required: true },
   total_chat_turns: { type: Number, required: true },
   total_active_chat_users: { type: Number, required: true },
-  day: { type: String, required: true, index: true },
+  day: { type: String, required: true, unique: true, index: true },
   breakdown: [breakdownSchema],
   time_frame_week: String,
   time_frame_month: String,
@@ -71,5 +71,5 @@ const copilotUsageSchema = new Schema<ICopilotUsage>({
 // Create an index on the day field for better query performance
 // copilotUsageSchema.index({ day: 1 });
 
-export const CopilotUsage = mongoose.models.CopilotUsage || 
-  mongoose.model<ICopilotUsage>('CopilotUsage', copilotUsageSchema);
+export const CopilotUsage = mongoose.models?.CopilotUsage || mongoose.model<ICopilotUsage>('CopilotUsage', copilotUsageSchema);
+ 
