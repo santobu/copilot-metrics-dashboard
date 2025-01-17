@@ -96,10 +96,11 @@ export const getRawCopilotMetricsForEnterpriseFromApi = async (): Promise<
   }
 
   const { enterprise, token, version } = env.response;
-
+  const startDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  console.log('Get usage data from: ', startDate);
   try {
     const response = await fetch(
-      `https://api.github.com/enterprises/${enterprise}/copilot/usage`,
+      `https://api.github.com/enterprises/${enterprise}/copilot/usage?since=${startDate}`,
       {
         cache: "no-store",
         headers: {
